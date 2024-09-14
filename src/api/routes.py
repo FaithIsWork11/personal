@@ -3,8 +3,8 @@ from flask_cors import cross_origin
 from flask_jwt_extended import create_access_token, jwt_required, get_jwt_identity, set_access_cookies
 from werkzeug.security import generate_password_hash, check_password_hash
 from werkzeug.utils import secure_filename
-from flask_mail import Message
-from api.models import db, Profile, SignUp,Contact
+from flask_mail import Message, mail
+from api.models import db, Profile, SignUp, Contact
 import os
 import re
 
