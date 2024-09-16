@@ -4,7 +4,7 @@ from flask_migrate import Migrate
 from flask_swagger import swagger
 from api.utils import APIException, generate_sitemap
 from api.models import db
-from flask_mail import Mail, Message
+from flask_mail import Mail
 from api.routes import api
 from api.admin import setup_admin
 from api.commands import setup_commands
@@ -38,15 +38,6 @@ app.config['MAIL_DEFAULT_SENDER'] = os.getenv('MAIL_DEFAULT_SENDER')
 # Initialize Flask-Mail
 mail = Mail(app)
 
-@app.route('/test-email')
-def test_email():
-    msg = Message('Test Email', recipients=['recipient@example.com'])
-    msg.body = 'This is a test email sent from Flask-Mail.'
-    try:
-        mail.send(msg)
-        return 'Email sent!'
-    except Exception as e:
-        return f'Failed to send email: {str(e)}'
 
 
 # Initialize Flask-Migrate

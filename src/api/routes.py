@@ -3,7 +3,8 @@ from flask_cors import cross_origin
 from flask_jwt_extended import create_access_token, jwt_required, get_jwt_identity, set_access_cookies
 from werkzeug.security import generate_password_hash, check_password_hash
 from werkzeug.utils import secure_filename
-from flask_mail import Message, mail
+from flask_mail import Message
+from . import mail
 from api.models import db, Profile, SignUp, Contact
 import os
 import re
@@ -17,6 +18,17 @@ api = Blueprint('api', __name__)
 UPLOAD_FOLDER = 'uploads'
 if not os.path.exists(UPLOAD_FOLDER):
     os.makedirs(UPLOAD_FOLDER)
+
+
+@api.route('/test-email', methods=['GET'])
+def test_email():
+    msg = Message('Test Email', recipients=['recipient@example.com'])
+    msg.body = 'This is a test email sent from Flask-Mail.'
+    try:
+        mail.send(msg)  # Use the 'mail' instance to send the email
+        return 'Email sent!'
+    except Exception as e:
+        return f'Failed to send email: {str(e)}'
 
 @api.route('/signup', methods=['POST'])
 @cross_origin()
