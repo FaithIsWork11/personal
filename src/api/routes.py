@@ -4,10 +4,11 @@ from flask_jwt_extended import create_access_token, jwt_required, get_jwt_identi
 from werkzeug.security import generate_password_hash, check_password_hash
 from werkzeug.utils import secure_filename
 from flask_mail import Message
-from . import mail
+from mail_setup import mail
 from api.models import db, Profile, SignUp, Contact
 import os
 import re
+import string
 
 api = Blueprint('api', __name__)
 
@@ -39,6 +40,7 @@ def signup():
     password = data.get('password')
     confirm_password = data.get('confirmPassword')
 
+    # Check if passwords match
     if password != confirm_password:
         return jsonify({'error': 'Passwords do not match.'}), 400
 
@@ -50,7 +52,16 @@ def signup():
     if not re.match(r'^[^@]+@[^@]+\.[^@]+$', email):
         return jsonify({'error': 'Invalid email address.'}), 400
 
-    hashed_password = generate_password_hash(password, method='pbkdf2:sha256')
+    # Password strength validation
+    if (
+        not any(char in string.ascii_uppercase for char in password) or
+        not any(char in string.ascii_lowercase for char in password) or
+        not any(char in string.digits for char in password) or
+        not any(char in string.punctuation for char in password)
+    ):
+        return jsonify({
+            'error': 'Password must contain at least one uppercase letter, one lowercase letter, one digit, and one special character.'
+        }), 400
 
     # Check if the email or username already exists
     existing_user = SignUp.query.filter_by(email=email).first()
@@ -62,6 +73,7 @@ def signup():
         return jsonify({'error': 'Username already taken.'}), 400
 
     # Save the user to the database
+    hashed_password = generate_password_hash(password, method='pbkdf2:sha256')
     new_user = SignUp(
         email=email,
         username=username,
