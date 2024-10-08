@@ -9,6 +9,7 @@ from api.models import db, Profile, SignUp, Contact
 import os
 import re
 import string
+import smtplib
 
 api = Blueprint('api', __name__)
 
@@ -23,13 +24,20 @@ if not os.path.exists(UPLOAD_FOLDER):
 
 @api.route('/test-email', methods=['GET'])
 def test_email():
-    msg = Message('Test Email', recipients=['recipient@example.com'])
-    msg.body = 'This is a test email sent from Flask-Mail.'
     try:
-        mail.send(msg)  # Use the 'mail' instance to send the email
-        return 'Email sent!'
+        # Test SMTP connection
+        server = smtplib.SMTP('smtp.gmail.com', 587)
+        server.starttls()
+        server.login(os.getenv('MAIL_USERNAME'), os.getenv('MAIL_PASSWORD'))
+        server.sendmail(
+            os.getenv('MAIL_USERNAME'),
+            'recipient@example.com',
+            'This is a test email sent directly via smtplib.'
+        )
+        server.quit()
+        return jsonify({'message': 'Test email sent successfully!'}), 200
     except Exception as e:
-        return f'Failed to send email: {str(e)}'
+        return jsonify({'error': f'Failed to send test email: {str(e)}'}), 500
 
 @api.route('/signup', methods=['POST'])
 @cross_origin()
@@ -275,10 +283,10 @@ def contact():
 
      # Prepare the email message
     msg = Message(
-        subject=f'New Contact Form Submission: {data["subject"]}',
-        recipients=['admin@example.com'],  # Replace with the admin's email address
-        body=f"Name: {data['name']}\nEmail: {data['email']}\nPhone: {data.get('phone')}\nSubject: {data['subject']}\nMessage: {data['message']}"
-    )
+    subject=f'New Contact Form Submission: {data["subject"]}',
+    recipients=[os.getenv('ADMIN_EMAIL')],  # Use environment variable for admin's email
+    body=f"Name: {data['name']}\nEmail: {data['email']}\nPhone: {data.get('phone')}\nSubject: {data['subject']}\nMessage: {data['message']}"
+)
     
     try:
         # Send the email

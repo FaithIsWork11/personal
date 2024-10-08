@@ -4,7 +4,7 @@ from flask_migrate import Migrate
 from flask_swagger import swagger
 from api.utils import APIException, generate_sitemap
 from api.models import db
-from mail_setup import mail  # Correct the import path
+from mail_setup import mail, init_mail  # Correct the import path
 from api.routes import api
 from api.admin import setup_admin
 from api.commands import setup_commands
@@ -17,10 +17,10 @@ static_file_dir = os.path.join(os.path.dirname(os.path.realpath(__file__)), '../
 load_dotenv()
 
 app = Flask(__name__)
+init_mail(app) 
 app.url_map.strict_slashes = False
 app.config["JWT_SECRET_KEY"] = os.getenv("JWT_SECRET_KEY")
 jwt = JWTManager(app)
-mail.init_app(app) 
 # Database configuration
 db_url = os.getenv("DATABASE_URL")
 if db_url is not None:
@@ -29,14 +29,6 @@ else:
     app.config['SQLALCHEMY_DATABASE_URI'] = "sqlite:////tmp/test.db"
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
-# Flask-Mail configuration
-
-app.config['MAIL_SERVER'] = os.getenv('MAIL_SERVER')
-app.config['MAIL_PORT'] = int(os.getenv('MAIL_PORT', 587))
-app.config['MAIL_USE_TLS'] = os.getenv('MAIL_USE_TLS') == 'True'
-app.config['MAIL_USERNAME'] = os.getenv('MAIL_USERNAME')
-app.config['MAIL_PASSWORD'] = os.getenv('MAIL_PASSWORD')
-app.config['MAIL_DEFAULT_SENDER'] = os.getenv('MAIL_DEFAULT_SENDER')
 
 
 
@@ -49,7 +41,9 @@ db.init_app(app)
 setup_admin(app)
 
 # Setup commands
-setup_commands(app)  
+setup_commands(app) 
+
+ 
 
 # Register blueprint
 app.register_blueprint(api, url_prefix='/api') 
