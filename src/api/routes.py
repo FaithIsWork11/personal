@@ -31,7 +31,7 @@ def test_email():
         server.login(os.getenv('MAIL_USERNAME'), os.getenv('MAIL_PASSWORD'))
         server.sendmail(
             os.getenv('MAIL_USERNAME'),
-            'recipient@example.com',
+            'hernesttheodore11@gmail.com',
             'This is a test email sent directly via smtplib.'
         )
         server.quit()
@@ -291,6 +291,8 @@ def contact():
     try:
         # Send the email
         mail.send(msg)
+       
+
     except Exception as e:
         # Handle email sending errors
         return jsonify({"error": f"Failed to send email: {str(e)}"}), 500
