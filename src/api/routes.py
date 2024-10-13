@@ -6,6 +6,8 @@ from werkzeug.utils import secure_filename
 from flask_mail import Message
 from mail_setup import mail
 from api.models import db, Profile, SignUp, Contact,LoginAttempt
+from datetime import datetime
+
 import os
 import re
 import string
@@ -97,24 +99,75 @@ def signup():
     set_access_cookies(response, access_token)
     
     return response, 200
-class LoginAttempt(db.Model):
-    __tablename__ = 'login_attempts'
+@api.route('/login-attempt', methods=['POST'])
+@cross_origin()
+def log_login_attempt():
+    # Get the JSON data from the request
+    data = request.get_json()
 
-    attempt_id = db.Column(db.Integer, primary_key=True, autoincrement=True)
-    email = db.Column(db.String(250), nullable=False)
-    successful = db.Column(db.Boolean, nullable=False)
-    timestamp = db.Column(db.DateTime, default=datetime.utcnow)
+    # Extract email and successful status from the request
+    email = data.get('email')
+    successful = data.get('successful')
 
-    def __repr__(self):
-        return f'<LoginAttempt {self.attempt_id}, {self.email}, Successful: {self.successful}>'
+    # Validate email field
+    if not email:
+        return jsonify({'error': 'Email is required.'}), 400
 
-    def serialize(self):
-        return {
-            'attempt_id': self.attempt_id,
-            'email': self.email,
-            'successful': self.successful,
-            'timestamp': self.timestamp
-        }
+    if not re.match(r'^[^@]+@[^@]+\.[^@]+$', email):
+        return jsonify({'error': 'Invalid email format.'}), 400
+
+    # Validate successful field
+    if successful is None:
+        return jsonify({'error': 'Successful status is required (true or false).'}), 400
+
+    if not isinstance(successful, bool):
+        return jsonify({'error': 'Successful must be a boolean value (true or false).'}), 400
+
+    # Log the login attempt
+    try:
+        # Create a new LoginAttempt instance
+        new_attempt = LoginAttempt(
+            email=email,
+            successful=successful,
+            timestamp=datetime.utcnow()
+        )
+
+        # Add the new login attempt to the database
+        db.session.add(new_attempt)
+        db.session.commit()
+
+        if successful:
+            return jsonify({
+                'message': 'Login attempt was successful and logged.',
+                'attempt': new_attempt.serialize()
+            }), 201
+        else:
+            return jsonify({
+                'message': 'Login attempt failed but logged for future reference.',
+                'attempt': new_attempt.serialize()
+            }), 201
+
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'error': f'Failed to log login attempt: {str(e)}'}), 500
+
+
+@api.route('/login-attempts', methods=['GET'])
+@cross_origin()
+def get_login_attempts():
+    # Optional query parameter to filter by success status
+    success = request.args.get('success')  # Accepts 'true' or 'false' as values
+
+    if success is not None:
+        # Convert the string 'true' or 'false' to boolean
+        success_filter = success.lower() == 'true'
+        attempts = LoginAttempt.query.filter_by(successful=success_filter).all()
+    else:
+        # Get all login attempts if no filter is applied
+        attempts = LoginAttempt.query.all()
+
+    serialized_attempts = [attempt.serialize() for attempt in attempts]
+    return jsonify(serialized_attempts), 200
 
 
 

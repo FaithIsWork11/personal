@@ -30,7 +30,7 @@ class LoginAttempt(db.Model):
     attempt_id = db.Column(db.Integer, primary_key=True, autoincrement=True)
     email = db.Column(db.String(250), nullable=False)
     successful = db.Column(db.Boolean, nullable=False)
-    timestamp = db.Column(db.DateTime, default=datetime.utcnow)
+    timestamp = db.Column(db.DateTime, default=datetime.utcnow, nullable=False)
 
     def __repr__(self):
         return f'<LoginAttempt {self.attempt_id}, {self.email}, Successful: {self.successful}>'
@@ -40,7 +40,7 @@ class LoginAttempt(db.Model):
             'attempt_id': self.attempt_id,
             'email': self.email,
             'successful': self.successful,
-            'timestamp': self.timestamp
+            'timestamp': self.timestamp.strftime("%Y-%m-%d %H:%M:%S")  # Format timestamp
         }
 
 
