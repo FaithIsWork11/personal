@@ -5,7 +5,7 @@ from werkzeug.security import generate_password_hash, check_password_hash
 from werkzeug.utils import secure_filename
 from flask_mail import Message
 from mail_setup import mail
-from api.models import db, Profile, SignUp, Contact
+from api.models import db, Profile, SignUp, Contact,LoginAttempt
 import os
 import re
 import string
@@ -97,6 +97,25 @@ def signup():
     set_access_cookies(response, access_token)
     
     return response, 200
+class LoginAttempt(db.Model):
+    __tablename__ = 'login_attempts'
+
+    attempt_id = db.Column(db.Integer, primary_key=True, autoincrement=True)
+    email = db.Column(db.String(250), nullable=False)
+    successful = db.Column(db.Boolean, nullable=False)
+    timestamp = db.Column(db.DateTime, default=datetime.utcnow)
+
+    def __repr__(self):
+        return f'<LoginAttempt {self.attempt_id}, {self.email}, Successful: {self.successful}>'
+
+    def serialize(self):
+        return {
+            'attempt_id': self.attempt_id,
+            'email': self.email,
+            'successful': self.successful,
+            'timestamp': self.timestamp
+        }
+
 
 
 @api.route('/profile', methods=['POST'])
@@ -290,7 +309,7 @@ def contact():
     
     try:
         # Send the email
-        mail.send(msg)
+     mail.send(msg)
        
 
     except Exception as e:

@@ -24,6 +24,24 @@ class SignUp(db.Model):
             'username': self.username,
             'account_created': self.account_created
         }
+class LoginAttempt(db.Model):
+    __tablename__ = 'login_attempts'
+
+    attempt_id = db.Column(db.Integer, primary_key=True, autoincrement=True)
+    email = db.Column(db.String(250), nullable=False)
+    successful = db.Column(db.Boolean, nullable=False)
+    timestamp = db.Column(db.DateTime, default=datetime.utcnow)
+
+    def __repr__(self):
+        return f'<LoginAttempt {self.attempt_id}, {self.email}, Successful: {self.successful}>'
+
+    def serialize(self):
+        return {
+            'attempt_id': self.attempt_id,
+            'email': self.email,
+            'successful': self.successful,
+            'timestamp': self.timestamp
+        }
 
 
 class Profile(db.Model):
