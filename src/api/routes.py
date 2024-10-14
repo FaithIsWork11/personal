@@ -99,8 +99,16 @@ def signup():
     set_access_cookies(response, access_token)
     
     return response, 200
-@api.route('/login-attempt', methods=['POST'])
-@cross_origin()
+
+from flask import request, jsonify
+from flask_cors import cross_origin
+from datetime import datetime
+import re
+
+# Assuming `api` is your blueprint and `db` is your SQLAlchemy instance
+
+@api.route('/login-attempts', methods=['POST'])
+@cross_origin()  # Enabling CORS for the route
 def log_login_attempt():
     # Get the JSON data from the request
     data = request.get_json()
@@ -136,16 +144,13 @@ def log_login_attempt():
         db.session.add(new_attempt)
         db.session.commit()
 
-        if successful:
-            return jsonify({
-                'message': 'Login attempt was successful and logged.',
-                'attempt': new_attempt.serialize()
-            }), 201
-        else:
-            return jsonify({
-                'message': 'Login attempt failed but logged for future reference.',
-                'attempt': new_attempt.serialize()
-            }), 201
+        # Return the structured JSON response
+        return jsonify({
+            'attempt_id': new_attempt.attempt_id,  # Assuming `id` is the primary key in the LoginAttempt model
+            'email': new_attempt.email,
+            'successful': new_attempt.successful,
+            'timestamp': new_attempt.timestamp.strftime('%Y-%m-%d %H:%M:%S')
+        }), 201
 
     except Exception as e:
         db.session.rollback()
@@ -168,8 +173,6 @@ def get_login_attempts():
 
     serialized_attempts = [attempt.serialize() for attempt in attempts]
     return jsonify(serialized_attempts), 200
-
-
 
 @api.route('/profile', methods=['POST'])
 @cross_origin()
