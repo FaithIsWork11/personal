@@ -100,16 +100,52 @@ def signup():
     
     return response, 200
 
-from flask import request, jsonify
-from flask_cors import cross_origin
-from datetime import datetime
-import re
+@api.route("/login", methods=["POST"])
+@cross_origin()
+def login():
+    data = request.json
+    email = data.get("email")
+    password = data.get("password")
 
-# Assuming `api` is your blueprint and `db` is your SQLAlchemy instance
+    user = SignUp.query.filter_by(email=email).first()
+
+    if user and check_password_hash(user.password, password):
+        # Successful login
+        access_token = create_access_token(identity=user.email)
+        response = jsonify({"access_token": access_token})
+        set_access_cookies(response, access_token)
+
+        # Log the successful login attempt
+        log_successful_login_attempt(email=email)
+
+        return response, 200
+    else:
+        # Failed login
+        log_failed_login_attempt(email=email)
+
+        return jsonify({"msg": "Bad email or password"}), 401
+
+def log_successful_login_attempt(email):
+    """Logs a successful login attempt to the database."""
+    log_login_attempt(email=email, successful=True)
+
+def log_failed_login_attempt(email):
+    """Logs a failed login attempt to the database."""
+    log_login_attempt(email=email, successful=False)
+
+def log_login_attempt(email, successful):
+    """Logs the login attempt to the database."""
+    try:
+        login_attempt = LoginAttempt(email=email, successful=successful)
+        db.session.add(login_attempt)
+        db.session.commit()
+    except Exception as e:
+        print(f"Failed to log login attempt: {e}")  # Handle the exception appropriately
+
 
 @api.route('/login-attempts', methods=['POST'])
 @cross_origin()  # Enabling CORS for the route
-def log_login_attempt():
+def log_login_attempt_route():
     # Get the JSON data from the request
     data = request.get_json()
 
@@ -146,7 +182,7 @@ def log_login_attempt():
 
         # Return the structured JSON response
         return jsonify({
-            'attempt_id': new_attempt.attempt_id,  # Assuming `id` is the primary key in the LoginAttempt model
+            'attempt_id': new_attempt.attempt_id,  # Use attempt_id instead of id
             'email': new_attempt.email,
             'successful': new_attempt.successful,
             'timestamp': new_attempt.timestamp.strftime('%Y-%m-%d %H:%M:%S')

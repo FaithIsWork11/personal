@@ -3,6 +3,7 @@ from datetime import datetime
 
 db = SQLAlchemy()
 
+# SignUp model
 class SignUp(db.Model):
     __tablename__ = 'sign_up'
 
@@ -13,6 +14,7 @@ class SignUp(db.Model):
     account_created = db.Column(db.DateTime, default=datetime.utcnow)
 
     profiles = db.relationship('Profile', backref='sign_up', uselist=False)  # One-to-one relationship with Profile
+    login_attempts = db.relationship('LoginAttempt', backref='sign_up', lazy=True)  # One-to-many relationship with LoginAttempt
 
     def __repr__(self):
         return f'<SignUp {self.user_id}, {self.email}>'
@@ -24,13 +26,17 @@ class SignUp(db.Model):
             'username': self.username,
             'account_created': self.account_created
         }
+
+# LoginAttempt model
 class LoginAttempt(db.Model):
     __tablename__ = 'login_attempts'
 
     attempt_id = db.Column(db.Integer, primary_key=True, autoincrement=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('sign_up.user_id'), nullable=True)  # Optional foreign key to link user if exists
     email = db.Column(db.String(250), nullable=False)
     successful = db.Column(db.Boolean, nullable=False)
     timestamp = db.Column(db.DateTime, default=datetime.utcnow, nullable=False)
+    ip_address = db.Column(db.String(45), nullable=True)  # IP address max length for IPv6
 
     def __repr__(self):
         return f'<LoginAttempt {self.attempt_id}, {self.email}, Successful: {self.successful}>'
@@ -38,12 +44,14 @@ class LoginAttempt(db.Model):
     def serialize(self):
         return {
             'attempt_id': self.attempt_id,
+            'user_id': self.user_id,
             'email': self.email,
             'successful': self.successful,
-            'timestamp': self.timestamp.strftime("%Y-%m-%d %H:%M:%S")  # Format timestamp
+            'timestamp': self.timestamp.strftime("%Y-%m-%d %H:%M:%S"),
+            'ip_address': self.ip_address
         }
 
-
+# Profile model
 class Profile(db.Model):
     __tablename__ = 'profile'
 
@@ -77,6 +85,7 @@ class Profile(db.Model):
             'interests': self.interests
         }
 
+# Like model
 class Like(db.Model):
     __tablename__ = 'likes'
 
@@ -100,6 +109,7 @@ class Like(db.Model):
             'date': self.date
         }
 
+# Message model
 class Message(db.Model):
     __tablename__ = 'messages'
 
@@ -123,16 +133,18 @@ class Message(db.Model):
             'message_date': self.message_date
         }
 
+# Contact model
 class Contact(db.Model):
     __tablename__ = 'contact'
 
-    contact_id = db.Column(db.Integer, primary_key=True, autoincrement=True)  
+    contact_id = db.Column(db.Integer, primary_key=True, autoincrement=True)
     name = db.Column(db.String(100), nullable=False)
     email = db.Column(db.String(120), nullable=False)
     phone = db.Column(db.String(20), nullable=True)
     subject = db.Column(db.String(200), nullable=False)
     message = db.Column(db.Text, nullable=False)
     date_submitted = db.Column(db.DateTime, default=datetime.utcnow)
+
     def __repr__(self):
         return f'<Contact {self.contact_id}, {self.name}, {self.email}>'
 
